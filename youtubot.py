@@ -1,4 +1,7 @@
 from banned_subreddits import BannedSubreddits
+from response import get_comment_response
+from comment import get_age, get_score
+from inbox import get_new_pms
 from config import DEFAULT_CONFIG
 import logging
 import time
@@ -20,10 +23,14 @@ class YoutuBot(object):
                 self._main_loop()
         except KeyboardInterrupt:
             self.banned_subreddits.save()
-            logging.info('\nMade %d comments' % comments_made)
-            logging.info('Exiting.')
+            logging.info('Received KeyboardInterrupt. Exiting.')
 
     def _main_loop(self):
+        read_only = True
+        read_only_expiry_time = time.time()
+        next_review_of_comments = read_only_expiry_time
+        task_list = []
+
         # List of comment IDs we have already replied to (so we don't reply twice)
         already_done = []
         youtubot = self.r.user.me()
@@ -41,13 +48,14 @@ class YoutuBot(object):
                         timer_start = time.time()
                         response = get_comment_response(comment)
                         if response:
+                            logging.info(response)
                             if read_only:
                                 # Add the comment and response to a list to process later
                                 task_list.append((comment, response))
                                 logging.info('\tAppending comment to task list (length %d)' % len(task_list))
                             else:
                                 # Submit the response as a comment to Reddit
-                                submit_response(comment, response)
+                                # submit_response(comment, response)
                                 timer_total = time.time() - timer_start
                 except requests.exceptions.HTTPError as e:
                     logging.warning('\tHTTP Error')
@@ -71,22 +79,24 @@ class YoutuBot(object):
         logging.info('STEP 3 - Deleting Downvoted Comments')
         # Only do this every 10 minutes
         if time.time() > next_review_of_comments:
-            for comment in youtubot.get_comments():
+            for comment in youtubot.comments.new():
                 if get_age(comment) > 3600.0 and get_score(comment) < 1:
                     logging.info('\tDeleting comment %s in /r/%s' % (comment.id, comment.subreddit))
                     comment.delete()
             next_review_of_comments = time.time() + 600
         # Fourth, check the inbox for any unread PMs
         logging.info('STEP 4 - Check PMs and Respond Accordingly')
-        messages = get_new_pms()
+        messages = get_new_pms(self.r)
         for m in messages:
             if m.subject == 'delete comment':
                 body = m.body.split('\n\n', 1)
                 comment_id = body[0]
                 # This will return None if no comment exists with comment_id
-                comment = r.get_info(thing_id = comment_id)
+                comment = self.r.comment(comment_id)
+                if comment.is_root:
+                    continue
                 try:
-                    parent = r.get_info(thing_id = comment.parent_id)
+                    parent = comment.parent()
                     # If there is such a comment belonging to us, and the sender of the message is the parent commentor
                     if comment and comment.author == youtubot and parent.author == m.author:
                         logging.info('\tDeleting comment %s' % comment_id)
@@ -109,4 +119,3 @@ class YoutuBot(object):
         response = ''
         is_first_match = True
         num_videos = 0
-        

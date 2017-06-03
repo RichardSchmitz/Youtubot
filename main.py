@@ -7,7 +7,8 @@ import youtubot
 VERSION = '1.1.0(beta)'
 ADMIN_USERNAME = 'theruchet'
 
-logging.basicConfig(format='%(levelname)s:\t%(message)s', filename = '%s-%s.log' % (VERSION, time.strftime('%Y-%m-%dT%H:%M')), level=logging.WARNING)
+# logging.basicConfig(format='%(levelname)s:\t%(message)s', filename = '%s-%s.log' % (VERSION, time.strftime('%Y-%m-%dT%H:%M')), level=logging.WARNING)
+logging.basicConfig(format='%(levelname)s:\t%(message)s', level=logging.INFO)
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -19,8 +20,5 @@ r = praw.Reddit(client_id=conf_vars['client_id'],
                 username=conf_vars['username'],
                 password=conf_vars['password'])
 
-# stream = r.subreddit('all').stream.comments()
-# print(next(stream).body)
-
-#bot = youtubot.YoutuBot(r)
-#bot.run()
+bot = youtubot.YoutuBot(r)
+bot.run()
