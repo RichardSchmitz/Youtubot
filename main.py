@@ -20,5 +20,5 @@ r = praw.Reddit(client_id=conf_vars['client_id'],
                 username=conf_vars['username'],
                 password=conf_vars['password'])
 
-bot = youtubot.YoutuBot(r)
+bot = youtubot.YoutuBot(r, ghost_mode=True)
 bot.run()
