@@ -1,5 +1,4 @@
 from banned_subreddits import BannedSubreddits
-from response import get_comment_response
 from comment import get_age, get_score
 from inbox import get_new_pms
 from config import DEFAULT_CONFIG
@@ -13,10 +12,11 @@ RATELIM_RE = re.compile(r'(\d+) (minutes|seconds)')
 
 
 class YoutuBot(object):
-    def __init__(self, reddit, **config_overrides):
+    def __init__(self, reddit, responder, **config_overrides):
         self.bot_config = DEFAULT_CONFIG
         self.bot_config.update(config_overrides)
         self.r = reddit
+        self.responder = responder
         self.banned_subreddits = BannedSubreddits(filename=self.bot_config['banned_subreddits_filename'])
         self.read_only = False
         self.read_only_expiry_time = time.time()
@@ -68,7 +68,7 @@ class YoutuBot(object):
                         self.already_done.append(comment.id)
                         # Start a timer
                         # timer_start = time.time()
-                        response = get_comment_response(comment)
+                        response = self.responder.get_comment_response(comment.body, comment.author)
                         if response:
                             logging.info('Queuing response for comment: {}'.format(comment.id))
                             self.queue_response(comment, response)
