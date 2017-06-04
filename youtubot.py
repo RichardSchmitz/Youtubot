@@ -67,6 +67,17 @@ class YoutuBot(object):
 
     def _main_loop(self):
         # First, check for new comments to reply to
+        self._generate_responses()
+        # Second, check if there are any tasks in the task_list
+        self._submit_responses()
+        # Third, check for any of our comments that are more than 1 hour old and have a score < 1. Delete them.
+        self._delete_downvoted()
+        # Fourth, check the inbox for any unread PMs
+        self._handle_messages()
+        # Fifth, check if the read_only time has expired
+        self._switch_mode()
+
+    def _generate_responses(self):
         logger.info('STEP 1 - Retrieving Comments and Generating Responses')
         try:
             comment_iter = self.comment_stream()
@@ -75,22 +86,10 @@ class YoutuBot(object):
                 try:
                     if self.should_respond(comment):
                         self.already_done.append(comment.id)
-                        # Start a timer
-                        # timer_start = time.time()
                         response = self.responder.get_comment_response(comment.body, comment.author)
                         if response:
                             logger.info('Queuing response for comment: {}'.format(comment.id))
                             self.queue_response(comment, response)
-                            # logger.info(response)
-                            # if not self.can_comment():
-                                # # Add the comment and response to a list to process later
-                                # task_list.append((comment, response))
-                                # logger.info('\tAppending comment to task list (length %d)' % len(task_list))
-                            # else:
-                            #     # Submit the response as a comment to Reddit
-                            #     if self.can_make_changes():
-                            #         submit_response(comment, response)
-                            #     timer_total = time.time() - timer_start
                 except requests.exceptions.HTTPError as e:
                     logger.warning('\tHTTP Error')
                     logger.warning('\t%s' % e)
@@ -98,7 +97,7 @@ class YoutuBot(object):
             logger.warning('\tHTTP Error when getting all comments')
             logger.warning('\t%s' % e)
 
-        # Second, check if there are any tasks in the task_list
+    def _submit_responses(self):
         # Caution: this hasn't been tested as youtubot now has enough karma to comment constantly
         logger.info('STEP 2 - Submitting Responses (if in Write Mode. Read-only: %s, Task List Len: %d)' % (self.read_only, len(self.task_list)))
         while len(self.task_list) > 0 and (not self.can_make_changes() or self.can_comment()):
@@ -110,8 +109,7 @@ class YoutuBot(object):
             if get_age(comment) < 5400.0:
                 self.submit_response(comment, response)
 
-        # Third, check for any of our comments that are more than 1 hour old and have a score < 1
-        # Delete them.
+    def _delete_downvoted(self):
         logger.info('STEP 3 - Deleting Downvoted Comments')
         # Only do this every 10 minutes
         if time.time() > self.next_review_of_comments:
@@ -121,7 +119,7 @@ class YoutuBot(object):
                     comment.delete()
             self.next_review_of_comments = time.time() + 600
 
-        # Fourth, check the inbox for any unread PMs
+    def _handle_messages(self):
         logger.info('STEP 4 - Checking PMs and Responding Accordingly')
         messages = get_new_pms(self.r)
         for m in messages:
@@ -145,7 +143,7 @@ class YoutuBot(object):
                     logger.warning('\t%s' % e)
                 m.mark_as_read()
 
-        # Fifth, check if the read_only time has expired
+    def _switch_mode(self):
         logger.info('STEP 5 - Check if it\'s Time to Switch to Write Mode')
         if self.read_only and time.time() > self.read_only_expiry_time:
             logger.info('\tSwitching to write mode...')
