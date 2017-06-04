@@ -2,6 +2,7 @@ import re
 from apiclient.discovery import build
 from urllib.parse import urlparse, parse_qs
 import logging
+import isodate
 
 
 logger = logging.getLogger(__name__)
@@ -69,10 +70,9 @@ def get_concise_description(description):
 
 
 def format_cols_for_video(video):
-    response = '[{}]({})|{}|{}|{}|{}|{}+ ({}%)|{}'.format(
+    response = '[{}]({})|{}|{}|{}|{}+ ({}%)|{}'.format(
         video['title'],
         video['url'],
-        video['category'],
         video['channel'],
         video['published'],
         video['duration'],
@@ -86,8 +86,8 @@ def format_cols_for_video(video):
 def generate_comment_response(comment_text, comment_author, videos):
     responded_videos = []
     response_rows = [
-        'Title' +   '|Category' +'|Channel' + '|Published'+'|Duration' +'|Likes' +   '|Total Views',
-        ':----------:|:----------:|:----------:|:----------:|:----------:|:----------:|:----------:'
+        'Title' +   '|Channel' + '|Published'+'|Duration' +'|Likes' +   '|Total Views',
+        ':----------:|:----------:|:----------:|:----------:|:----------:|:----------:'
     ]
     for video in videos:
         try:
@@ -112,7 +112,7 @@ def generate_comment_response(comment_text, comment_author, videos):
         video_s = 'Video'
         if len(responded_videos) > 1:
             video_s = '%ss' % video_s
-        start_blurb = '{} linked by /u/{}:\n\n---\n\n'.format(video_s, comment_author)
+        start_blurb = '{} linked by /u/{}:'.format(video_s, comment_author)
         end_blurb = '---\n\n[^Bot ^Info](http://www.reddit.com/r/%s/%s) ^| [^Mods](http://www.reddit.com/r/%s/%s) ^| [^Parent ^Commenter ^Delete](%s) ^| ^version ^%s ^published ^%s \n\n^youtubot ^is ^in ^beta ^phase. ^Please [^help ^us ^improve](http://www.reddit.com/r/%s/) ^and ^better ^serve ^the ^Reddit ^community.' % (SUBREDDIT, WIKI_INFO_PATH, SUBREDDIT, WIKI_MODS_PATH, delete_url, version, published, SUBREDDIT)
 
         response_rows.insert(0, start_blurb)
@@ -141,25 +141,41 @@ class YoutubeCommentResponder(object):
         if len(ids) > 0:
             api_response = self.youtube.videos().list(
                 id=','.join(ids),
-                part='snippet'
+                part='snippet,statistics,contentDetails'
             ).execute()
 
             for item in api_response['items']:
                 snippet = item['snippet']
+                statistics = item['statistics']
+                content_details = item['contentDetails']
+
                 description = get_concise_description(snippet['description'])
+
+                total_votes = int(statistics['likeCount']) + int(statistics['dislikeCount'])
+                likes_percent = 0
+
+                if total_votes > 0:
+                    likes_percent = int(100 * int(statistics['likeCount']) / total_votes)
+
+                published = isodate.parse_date(snippet['publishedAt'])
+                duration = isodate.parse_duration(content_details['duration'])
 
                 video_info.append({
                     'id': item['id'],
                     'url': urls[item['id']],
                     'channel': snippet['channelTitle'],
-                    'category': 'Unknown',
+                    # Currently not including category information as YouTube just responds with a category id.
+                    # Category ids refer to different categories based on the region, so I somehow need to figure
+                    # out what region the response is referring to. The response table was too wide anyway so for
+                    # now category is simply excluded. See https://developers.google.com/youtube/v3/docs/videoCategories/list
+                    #'category': 'Unknown',
                     'title': snippet['title'],
                     'description': description,
-                    'published': snippet['publishedAt'],
-                    'duration': 'Unknown',
-                    'likes': 'Unknown',
-                    'likes_percent': 'Unknown',
-                    'views': 'Unknown'
+                    'published': str(published),
+                    'duration': str(duration),
+                    'likes': statistics['likeCount'],
+                    'likes_percent': likes_percent,
+                    'views': statistics['viewCount']
                 })
 
         return video_info
