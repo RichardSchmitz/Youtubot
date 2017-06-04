@@ -7,6 +7,7 @@ import time
 import requests
 import re
 from pprint import pprint
+import prawcore, praw
 
 
 RATELIM_RE = re.compile(r'(\d+) (minutes|seconds)')
@@ -166,7 +167,7 @@ class YoutuBot(object):
                 # Also replace the format quote placeholder
                 new_response = new_response.replace('$quote', '>')
                 reply.edit(new_response)
-            except praw.errors.RateLimitExceeded as e:
+            except praw.exceptions.APIException as e:
                 # We are commenting too much. Switch to read_only mode
                 m = RATELIM_RE.search(str(e))
                 try:
@@ -185,15 +186,15 @@ class YoutuBot(object):
                 self.read_only = True
                 self.read_only_expiry_time = time.time() + sleep_duration
                 self.queue_response(comment, response)
-            except praw.errors.APIException as e:
-                # The comment was deleted before we could reply so just move on
-                logger.warning('\tTried to reply but encountered APIException.')
-                logger.warning('\t%s' % e)
-            except requests.exceptions.HTTPError as e:
+            # except praw.errors.APIException as e:
+            #     # The comment was deleted before we could reply so just move on
+            #     logger.warning('\tTried to reply but encountered APIException.')
+            #     logger.warning('\t%s' % e)
+            except prawcore.exceptions.Forbidden as e:
                 # We are banned from this subreddit
-                logger.warning('\tTried to reply but encountered HTTPError.')
+                logger.warning('\tTried to reply but encountered Forbidden.')
                 logger.warning('\t%s' % e)
                 logger.warning('\tAdding /r/%s to the list of banned subreddits' % sub)
-                banned_subreddits.append(str(sub))
+                self.banned_subreddits.add(str(sub))
         else:
             logger.info('Ghost mode response:\n{}'.format(response))

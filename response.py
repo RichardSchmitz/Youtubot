@@ -151,11 +151,16 @@ class YoutubeCommentResponder(object):
 
                 description = get_concise_description(snippet['description'])
 
-                total_votes = int(statistics['likeCount']) + int(statistics['dislikeCount'])
                 likes_percent = 0
+                likes_count = 0
 
-                if total_votes > 0:
-                    likes_percent = int(100 * int(statistics['likeCount']) / total_votes)
+                if 'likeCount' in statistics and 'dislikeCount' in statistics:
+                    likes_count = int(statistics['likeCount'])
+                    dislikes_count = int(statistics['dislikeCount'])
+                    total_votes = likes_count + dislikes_count
+
+                    if total_votes > 0:
+                        likes_percent = int(100 * int(likes_count / total_votes))
 
                 published = isodate.parse_date(snippet['publishedAt'])
                 duration = isodate.parse_duration(content_details['duration'])
@@ -173,7 +178,7 @@ class YoutubeCommentResponder(object):
                     'description': description,
                     'published': str(published),
                     'duration': str(duration),
-                    'likes': int(statistics['likeCount']),
+                    'likes': likes_count,
                     'likes_percent': likes_percent,
                     'views': int(statistics['viewCount'])
                 })

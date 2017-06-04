@@ -26,6 +26,6 @@ y = response.YoutubeCommentResponder(config['youtube.com'])
 bot = youtubot.YoutuBot(reddit=r,
                         responder=y,
                         ghost_mode=False,
-                        subreddit='test')
+                        subreddit='all')
 bot.run()
 logging.shutdown()
