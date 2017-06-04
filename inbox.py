@@ -6,7 +6,7 @@ def get_new_pms(r):
     pms = []
     for pm in inbox:
         if isinstance(pm, praw.models.Message):
-            pms += pm
+            pms.append(pm)
 
     r.inbox.mark_read(pms)
 

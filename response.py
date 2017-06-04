@@ -9,15 +9,13 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-MAX_DESCRIPTION_LENGTH = 240
+MAX_DESCRIPTION_LENGTH = 60
 
 YOUTUBE_RE = re.compile(r'youtu(?:be\.com|\.be)/(?!user|results|channel|playlist|static|#)[\w?=&-.]+')
 USERNAME = '_youtubot_'
-SUBREDDIT = 'bot_subreddit' # Subreddit that you created for the bot
+SUBREDDIT = 'youtubot' # Subreddit that you created for the bot
 WIKI_INFO_PATH = 'wiki/index' # Path within the subreddit to link to for "Bot Info"
-WIKI_MODS_PATH = 'wiki/index#wiki_mods' # Path within the subreddit to link to for "Mods"
-version = '1.1.0(beta)'
-published = '2017-06-03'
+version = '1.1.0b'
 
 
 def unescape_html(s):
@@ -63,7 +61,7 @@ def get_concise_description(description):
     if len(description) > MAX_DESCRIPTION_LENGTH:
         description = description[:MAX_DESCRIPTION_LENGTH].strip()
         last_space = description.rfind(' ')
-        if last_space > 100: # arbitrary minimum cutoff length
+        if last_space > MAX_DESCRIPTION_LENGTH / 2: # arbitrary minimum cutoff length
             description = description[:last_space] + '...'
 
     return description
@@ -112,8 +110,8 @@ def generate_comment_response(comment_text, comment_author, videos):
         video_s = 'Video'
         if len(responded_videos) > 1:
             video_s = '%ss' % video_s
-        start_blurb = '{} linked by /u/{}:'.format(video_s, comment_author)
-        end_blurb = '---\n\n[^Bot ^Info](http://www.reddit.com/r/%s/%s) ^| [^Mods](http://www.reddit.com/r/%s/%s) ^| [^Parent ^Commenter ^Delete](%s) ^| ^version ^%s ^published ^%s \n\n^youtubot ^is ^in ^beta ^phase. ^Please [^help ^us ^improve](http://www.reddit.com/r/%s/) ^and ^better ^serve ^the ^Reddit ^community.' % (SUBREDDIT, WIKI_INFO_PATH, SUBREDDIT, WIKI_MODS_PATH, delete_url, version, published, SUBREDDIT)
+        start_blurb = '{} linked by /u/{}:\n'.format(video_s, comment_author)
+        end_blurb = '---\n\n[^Info](http://www.reddit.com/r/%s/%s) ^| [^/u/%s ^Can ^Delete](%s) ^| ^v%s' % (SUBREDDIT, WIKI_INFO_PATH, comment_author, delete_url, version)
 
         response_rows.insert(0, start_blurb)
         response_rows.append('')
@@ -130,6 +128,8 @@ class YoutubeCommentResponder(object):
         urls = {}
         ids = []
         for url in video_urls:
+            # temp hack. Sometimes these end up on the end of the url for some reason...
+            url = url.strip(')').strip('.').strip('*')
             vid = get_video_id_from_url(url)
 
             if vid:
