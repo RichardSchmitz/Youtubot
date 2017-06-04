@@ -36,7 +36,9 @@ def get_video_id_from_url(url):
     logger.debug('Attempting to parse id from url={}'.format(url))
     if 'youtube.com' in parsed_url.netloc:
         # Full form URL. Video id is in query param.
-        video_id = parse_qs(parsed_url.query)['v'][0]
+        query_params = parse_qs(parsed_url.query)
+        if 'v' in query_params:
+            video_id = ['v'][0]
     elif 'youtu.be' in parsed_url.netloc:
         # Shortened URL. Video id is in path.
         video_id = parsed_url.path.strip('/').split('/')[0]
