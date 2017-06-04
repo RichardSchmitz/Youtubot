@@ -11,6 +11,10 @@ import re
 RATELIM_RE = re.compile(r'(\d+) (minutes|seconds)')
 
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+
 class YoutuBot(object):
     def __init__(self, reddit, responder, **config_overrides):
         self.bot_config = DEFAULT_CONFIG
@@ -44,9 +48,9 @@ class YoutuBot(object):
         self.task_list.append((comment, response))
 
     def run(self):
-        logging.info("Starting YoutuBot")
+        logger.info("Starting YoutuBot")
         if not self.can_make_changes():
-            logging.info("YoutuBot will not make any changes to the Reddit state this run.")
+            logger.info("YoutuBot will not make any changes to the Reddit state this run.")
         # todo: maybe handle this with signal instead of try/except. See:
         # https://stackoverflow.com/questions/18499497/how-to-process-sigterm-signal-gracefully
         try:
@@ -54,11 +58,11 @@ class YoutuBot(object):
                 self._main_loop()
         except KeyboardInterrupt:
             self.banned_subreddits.save()
-            logging.info('Received KeyboardInterrupt. Exiting.')
+            logger.info('Received KeyboardInterrupt. Exiting.')
 
     def _main_loop(self):
         # First, check for new comments to reply to
-        logging.info('STEP 1 - Retrieving Comments and Submitting/Storing Responses')
+        logger.info('STEP 1 - Retrieving Comments and Generating Responses')
         try:
             comment_iter = self.r.subreddit('all').stream.comments()
             for i in range(self.max_comments_per_iteration()):
@@ -70,50 +74,50 @@ class YoutuBot(object):
                         # timer_start = time.time()
                         response = self.responder.get_comment_response(comment.body, comment.author)
                         if response:
-                            logging.info('Queuing response for comment: {}'.format(comment.id))
+                            logger.info('Queuing response for comment: {}'.format(comment.id))
                             self.queue_response(comment, response)
-                            # logging.info(response)
+                            # logger.info(response)
                             # if not self.can_comment():
                                 # # Add the comment and response to a list to process later
                                 # task_list.append((comment, response))
-                                # logging.info('\tAppending comment to task list (length %d)' % len(task_list))
+                                # logger.info('\tAppending comment to task list (length %d)' % len(task_list))
                             # else:
                             #     # Submit the response as a comment to Reddit
                             #     if self.can_make_changes():
                             #         submit_response(comment, response)
                             #     timer_total = time.time() - timer_start
                 except requests.exceptions.HTTPError as e:
-                    logging.warning('\tHTTP Error')
-                    logging.warning('\t%s' % e)
+                    logger.warning('\tHTTP Error')
+                    logger.warning('\t%s' % e)
         except requests.exceptions.HTTPError as e:
-            logging.warning('\tHTTP Error when getting all comments')
-            logging.warning('\t%s' % e)
+            logger.warning('\tHTTP Error when getting all comments')
+            logger.warning('\t%s' % e)
 
         # Second, check if there are any tasks in the task_list
         # Caution: this hasn't been tested as youtubot now has enough karma to comment constantly
-        logging.info('STEP 2 - Checking on Task List (if in Write Mode. Read-only: %s, Task List Len: %d)' % (self.read_only, len(self.task_list)))
+        logger.info('STEP 2 - Submitting Responses (if in Write Mode. Read-only: %s, Task List Len: %d)' % (self.read_only, len(self.task_list)))
         while len(self.task_list) > 0 and (not self.can_make_changes() or self.can_comment()):
             # Pop one out, make sure it's less than 1.5 hours old, and submit the response
             task = self.task_list.pop(0)
             comment = task[0]
             response = task[1]
-            logging.info('\tPopping comment out of task list (length %d)' % len(self.task_list))
+            logger.info('\tPopping comment out of task list (length %d)' % len(self.task_list))
             if get_age(comment) < 5400.0:
                 self.submit_response(comment, response)
 
         # Third, check for any of our comments that are more than 1 hour old and have a score < 1
         # Delete them.
-        logging.info('STEP 3 - Deleting Downvoted Comments')
+        logger.info('STEP 3 - Deleting Downvoted Comments')
         # Only do this every 10 minutes
         if time.time() > self.next_review_of_comments:
             for comment in self.youtubot.comments.new():
                 if get_age(comment) > 3600.0 and get_score(comment) < 1:
-                    logging.info('\tDeleting comment %s in /r/%s' % (comment.id, comment.subreddit))
+                    logger.info('\tDeleting comment %s in /r/%s' % (comment.id, comment.subreddit))
                     comment.delete()
             self.next_review_of_comments = time.time() + 600
 
         # Fourth, check the inbox for any unread PMs
-        logging.info('STEP 4 - Check PMs and Respond Accordingly')
+        logger.info('STEP 4 - Checking PMs and Responding Accordingly')
         messages = get_new_pms(self.r)
         for m in messages:
             if m.subject == 'delete comment':
@@ -127,19 +131,19 @@ class YoutuBot(object):
                     parent = comment.parent()
                     # If there is such a comment belonging to us, and the sender of the message is the parent commentor
                     if comment and comment.author == youtubot and parent.author == m.author:
-                        logging.info('\tDeleting comment %s' % comment_id)
+                        logger.info('\tDeleting comment %s' % comment_id)
                         if len(body) > 1:
-                            logging.info('\t%s' % body[1])
+                            logger.info('\t%s' % body[1])
                         comment.delete()
                 except AttributeError as e:
-                    logging.warning('\tCould not delete requested comment %s' % comment_id)
-                    logging.warning('\t%s' % e)
+                    logger.warning('\tCould not delete requested comment %s' % comment_id)
+                    logger.warning('\t%s' % e)
                 m.mark_as_read()
 
         # Fifth, check if the read_only time has expired
-        logging.info('STEP 5 - Check if it\'s Time to Switch to Write Mode')
+        logger.info('STEP 5 - Check if it\'s Time to Switch to Write Mode')
         if self.read_only and time.time() > self.read_only_expiry_time:
-            logging.info('\tSwitching to write mode...')
+            logger.info('\tSwitching to write mode...')
             self.read_only = False
 
     # Takes a praw comment object and a response string and attempts to reply to the comment.
@@ -150,7 +154,7 @@ class YoutuBot(object):
             sub = comment.submission.subreddit
             try:
                 reply = comment.reply(response)
-                logging.info('\tCommenting on %s in /r/%s' % (comment.permalink, sub))
+                logger.info('\tCommenting on %s in /r/%s' % (comment.permalink, sub))
                 # Edit the reply to replace the comment_id placeholder
                 new_response = reply.body.replace('$comment_id', reply.name)
                 # Also replace the format quote placeholder
@@ -163,27 +167,27 @@ class YoutuBot(object):
                     sleep_duration = int(m.group(1))
                     sleep_unit = m.group(2)
                 except (AttributeError, TypeError) as e:
-                    logging.warning('\tRatelimit exceeded but time until next allowed post could not be retrieved')
-                    logging.warning('\t%s' % e)
+                    logger.warning('\tRatelimit exceeded but time until next allowed post could not be retrieved')
+                    logger.warning('\t%s' % e)
                     sleep_duration = 1
                     sleep_unit = 'minutes'
                 if sleep_unit == "minutes":
                     sleep_duration = sleep_duration * 60
                 # Go to read-only mode for an extra 30 seconds, just to be safe
                 sleep_duration += 30
-                logging.info('\tComment rate limit exceeded. Switching to read-only mode for %d seconds.' % sleep_duration)
+                logger.info('\tComment rate limit exceeded. Switching to read-only mode for %d seconds.' % sleep_duration)
                 self.read_only = True
                 self.read_only_expiry_time = time.time() + sleep_duration
                 self.queue_response(comment, response)
             except praw.errors.APIException as e:
                 # The comment was deleted before we could reply so just move on
-                logging.warning('\tTried to reply but encountered APIException.')
-                logging.warning('\t%s' % e)
+                logger.warning('\tTried to reply but encountered APIException.')
+                logger.warning('\t%s' % e)
             except requests.exceptions.HTTPError as e:
                 # We are banned from this subreddit
-                logging.warning('\tTried to reply but encountered HTTPError.')
-                logging.warning('\t%s' % e)
-                logging.warning('\tAdding /r/%s to the list of banned subreddits' % sub)
+                logger.warning('\tTried to reply but encountered HTTPError.')
+                logger.warning('\t%s' % e)
+                logger.warning('\tAdding /r/%s to the list of banned subreddits' % sub)
                 banned_subreddits.append(str(sub))
         else:
-            logging.info('Ghost mode response:\n{}'.format(response))
+            logger.info('Ghost mode response:\n{}'.format(response))

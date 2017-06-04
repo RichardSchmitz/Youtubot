@@ -3,9 +3,14 @@ from apiclient.discovery import build
 from urllib.parse import urlparse, parse_qs
 import logging
 
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+
 MAX_DESCRIPTION_LENGTH = 240
 
-YOUTUBE_RE = re.compile(r'youtu(?:be\.com|\.be)/(?!user|results|channel|playlist|#)[\w?=&-.]+')
+YOUTUBE_RE = re.compile(r'youtu(?:be\.com|\.be)/(?!user|results|channel|playlist|static|#)[\w?=&-.]+')
 USERNAME = '_youtubot_'
 SUBREDDIT = 'bot_subreddit' # Subreddit that you created for the bot
 WIKI_INFO_PATH = 'wiki/index' # Path within the subreddit to link to for "Bot Info"
@@ -42,7 +47,7 @@ def get_comment_response(comment):
         #         title_in_comment = re.search(data['title'].lower(), comment.body.lower())
         #     except:
         #         e = sys.exc_info()[0]
-        #         logging.error('RE error: %s' % e)
+        #         logger.error('RE error: %s' % e)
         #         title_in_comment = False
         # if data and not title_in_comment:
         #     num_videos += 1
@@ -58,12 +63,12 @@ def get_comment_response(comment):
         #             # This error shouldnt be happening. Is something wrong with data['summary']?
         #             # Non-unicode characters are causing this to fail (eg. some chinese characters, etc)
         #             # Also found for http://youtube.com/watch?v=-_8K7bOiBAA ????
-        #             logging.warning('\t%s' % data)
-        #             logging.warning('\tFound at %s' % link)
+        #             logger.warning('\t%s' % data)
+        #             logger.warning('\tFound at %s' % link)
         # elif data and title_in_comment:
         #     # Don't respond if the video's title is already in the comment
         #     # temp
-        #     logging.info('\tTitle found in comment %s' % comment.permalink)
+        #     logger.info('\tTitle found in comment %s' % comment.permalink)
     if len(response) > 0:
         # Append the starting and ending blurbs
         delete_url = 'http://www.reddit.com/message/compose/?to={}&subject=delete\%20comment&message=$comment_id\%0A\%0AReason\%3A\%20\%2A\%2Aplease+help+us+improve\%2A\%2A'.format(USERNAME)
@@ -78,7 +83,7 @@ def get_comment_response(comment):
 def get_video_id_from_url(url):
     parsed_url = urlparse(url)
     video_id = None
-    logging.debug('Attempting to parse id from url={}'.format(url))
+    logger.debug('Attempting to parse id from url={}'.format(url))
     if 'youtube.com' in parsed_url.netloc:
         # Full form URL. Video id is in query param.
         video_id = parse_qs(parsed_url.query)['v'][0]
@@ -86,12 +91,15 @@ def get_video_id_from_url(url):
         # Shortened URL. Video id is in path.
         video_id = parsed_url.path.strip('/').split('/')[0]
 
-    logging.debug('Parsed video_id={} from url={}'.format(video_id, url))
+    logger.debug('Parsed video_id={} from url={}'.format(video_id, url))
 
     return video_id
 
 def get_concise_description(description):
-    description = description.replace('\n', ' ')
+    if len(description.strip()) == 0:
+        return None
+
+    description = description.replace('\n', ' ').replace('\r', ' ')
 
     if len(description) > MAX_DESCRIPTION_LENGTH:
         description = description[:MAX_DESCRIPTION_LENGTH].strip()
@@ -123,17 +131,17 @@ def generate_comment_response(comment_text, comment_author, videos):
     ]
     for video in videos:
         try:
-            title_in_comment = re.search(data['title'].lower(), comment_text.lower())
+            title_in_comment = re.search(video['title'].lower(), comment_text.lower())
         except Exception as e:
-            logging.error('RE error: %s' % e)
+            logger.error('RE error: %s' % e)
             title_in_comment = False
         if title_in_comment:
-            logging.info("Title found in comment. Won't include info for this video.")
+            logger.info("Title found in comment. Won't include info for this video.")
         else:
             responded_videos.append(video)
             response_rows.append(format_cols_for_video(video))
 
-    if len(responded_videos) == 1:
+    if len(responded_videos) == 1 and responded_videos[0]['description']:
         response_rows.append('')
         response_rows.append('$quote {}'.format(responded_videos[0]['description']))
 
@@ -161,8 +169,9 @@ class YoutubeCommentResponder(object):
         urls = {}
         ids = []
         for url in video_urls:
-            # temporary hack because some of the URLs are ending up with a ) or * at the end.. dont know why
+            # temporary hack because some of the URLs are ending up with a ), . or * at the end... dont know why
             url.strip(')')
+            url.strip('.') # well I know why . ends up in it - it's included in the regex because sometimes the url has feature=youtu.be in it
             url.strip('*')
 
             vid = get_video_id_from_url(url)
