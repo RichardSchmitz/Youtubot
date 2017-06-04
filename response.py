@@ -68,7 +68,7 @@ def get_concise_description(description):
 
 
 def format_cols_for_video(video):
-    response = '[{}]({})|{}|{}|{}|{}+ ({}%)|{}'.format(
+    response = '[{}]({})|{}|{}|{}|{:,}+ ({}%)|{:,}'.format(
         video['title'],
         video['url'],
         video['channel'],
@@ -111,7 +111,7 @@ def generate_comment_response(comment_text, comment_author, videos):
         if len(responded_videos) > 1:
             video_s = '%ss' % video_s
         start_blurb = '{} linked by /u/{}:\n'.format(video_s, comment_author)
-        end_blurb = '---\n\n[^Info](http://www.reddit.com/r/%s/%s) ^| [^/u/%s ^Can ^Delete](%s) ^| ^v%s' % (SUBREDDIT, WIKI_INFO_PATH, comment_author, delete_url, version)
+        end_blurb = '---\n\n[^Info](http://www.reddit.com/r/%s/%s) ^| [^/u/%s ^can ^delete](%s) ^| ^v%s' % (SUBREDDIT, WIKI_INFO_PATH, comment_author, delete_url, version)
 
         response_rows.insert(0, start_blurb)
         response_rows.append('')
@@ -173,9 +173,9 @@ class YoutubeCommentResponder(object):
                     'description': description,
                     'published': str(published),
                     'duration': str(duration),
-                    'likes': statistics['likeCount'],
+                    'likes': int(statistics['likeCount']),
                     'likes_percent': likes_percent,
-                    'views': statistics['viewCount']
+                    'views': int(statistics['viewCount'])
                 })
 
         return video_info
