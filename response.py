@@ -43,6 +43,11 @@ def get_video_id_from_url(url):
         # Shortened URL. Video id is in path.
         video_id = parsed_url.path.strip('/').split('/')[0]
 
+    if video_id:
+        # temporary hack because some of the IDs are ending up with a ), . or * at the end... dont know why
+        # well I know why . ends up in it - it's included in the regex because sometimes the url has feature=youtu.be in it
+        video_id = video_id.strip(')').strip('.').strip('*')
+
     logger.debug('Parsed video_id={} from url={}'.format(video_id, url))
 
     return video_id
@@ -125,11 +130,6 @@ class YoutubeCommentResponder(object):
         urls = {}
         ids = []
         for url in video_urls:
-            # temporary hack because some of the URLs are ending up with a ), . or * at the end... dont know why
-            url.strip(')')
-            url.strip('.') # well I know why . ends up in it - it's included in the regex because sometimes the url has feature=youtu.be in it
-            url.strip('*')
-
             vid = get_video_id_from_url(url)
 
             if vid:
