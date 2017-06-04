@@ -131,31 +131,36 @@ class YoutubeCommentResponder(object):
             url.strip('*')
 
             vid = get_video_id_from_url(url)
-            urls[vid] = url
-            ids.append(vid)
-        api_response = self.youtube.videos().list(
-            id=','.join(ids),
-            part='snippet'
-        ).execute()
+
+            if vid:
+                urls[vid] = url
+                ids.append(vid)
 
         video_info = []
-        for item in api_response['items']:
-            snippet = item['snippet']
-            description = get_concise_description(snippet['description'])
 
-            video_info.append({
-                'id': item['id'],
-                'url': urls[item['id']],
-                'channel': snippet['channelTitle'],
-                'category': 'Unknown',
-                'title': snippet['title'],
-                'description': description,
-                'published': snippet['publishedAt'],
-                'duration': 'Unknown',
-                'likes': 'Unknown',
-                'likes_percent': 'Unknown',
-                'views': 'Unknown'
-            })
+        if len(ids) > 0:
+            api_response = self.youtube.videos().list(
+                id=','.join(ids),
+                part='snippet'
+            ).execute()
+
+            for item in api_response['items']:
+                snippet = item['snippet']
+                description = get_concise_description(snippet['description'])
+
+                video_info.append({
+                    'id': item['id'],
+                    'url': urls[item['id']],
+                    'channel': snippet['channelTitle'],
+                    'category': 'Unknown',
+                    'title': snippet['title'],
+                    'description': description,
+                    'published': snippet['publishedAt'],
+                    'duration': 'Unknown',
+                    'likes': 'Unknown',
+                    'likes_percent': 'Unknown',
+                    'views': 'Unknown'
+                })
 
         return video_info
 
@@ -170,6 +175,6 @@ class YoutubeCommentResponder(object):
             urls.append(url)
         if len(urls) > 0:
             videos = self.get_video_info(urls)
-            return generate_comment_response(comment_text, comment_author, videos)
-        else:
-            return None
+            if len(videos) > 0:
+                return generate_comment_response(comment_text, comment_author, videos)
+        return None
