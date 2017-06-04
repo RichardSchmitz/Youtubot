@@ -37,7 +37,7 @@ def get_video_id_from_url(url):
         # Full form URL. Video id is in query param.
         query_params = parse_qs(parsed_url.query)
         if 'v' in query_params:
-            video_id = ['v'][0]
+            video_id = query_params['v'][0]
     elif 'youtu.be' in parsed_url.netloc:
         # Shortened URL. Video id is in path.
         video_id = parsed_url.path.strip('/').split('/')[0]
