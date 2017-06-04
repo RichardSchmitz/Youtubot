@@ -47,6 +47,11 @@ class YoutuBot(object):
     def queue_response(self, comment, response):
         self.task_list.append((comment, response))
 
+    def comment_stream(self):
+        subreddit = self.bot_config['subreddit']
+        logger.debug('Opening stream from subreddit={}'.format(subreddit))
+        return self.r.subreddit(subreddit).stream.comments()
+
     def run(self):
         logger.info("Starting YoutuBot")
         if not self.can_make_changes():
@@ -64,7 +69,7 @@ class YoutuBot(object):
         # First, check for new comments to reply to
         logger.info('STEP 1 - Retrieving Comments and Generating Responses')
         try:
-            comment_iter = self.r.subreddit('all').stream.comments()
+            comment_iter = self.comment_stream()
             for i in range(self.max_comments_per_iteration()):
                 comment = next(comment_iter)
                 try:
