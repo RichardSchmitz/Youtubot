@@ -130,28 +130,37 @@ class YoutuBot(object):
             if m.subject == 'delete comment':
                 body = m.body.split('\n\n', 1)
                 comment_id = body[0]
-                # This will return None if no comment exists with comment_id
-                comment = self.r.comment(comment_id)
-                if comment.is_root:
-                    continue
+                comment = None
                 try:
-                    parent = comment.parent()
-                    # If there is such a comment belonging to us, and the sender of the message is the parent commentor
-                    if comment and comment.author == self.youtubot and parent.author == m.author:
-                        logger.info('\tDeleting comment %s' % comment_id)
-                        if len(body) > 1:
-                            logger.info('\t%s' % body[1])
-                        comment.delete()
-                except AttributeError as e:
+                    # This will return None if no comment exists with comment_id
+                    comment = self.r.comment(comment_id)
+                    if comment.is_root:
+                        continue
+                    try:
+                        parent = comment.parent()
+                        # If there is such a comment belonging to us, and the sender of the message is the parent commentor
+                        if comment and comment.author == self.youtubot and parent.author == m.author:
+                            logger.info('\tDeleting comment %s' % comment_id)
+                            if len(body) > 1:
+                                logger.info('\t%s' % body[1])
+                            comment.delete()
+                    except AttributeError as e:
+                        logger.warning('\tCould not delete requested comment %s' % comment_id)
+                        logger.warning('\t%s' % e)
+                except praw.exceptions.PRAWException as e:
                     logger.warning('\tCould not delete requested comment %s' % comment_id)
                     logger.warning('\t%s' % e)
-                m.mark_read()
+            m.mark_read()
 
     def _switch_mode(self):
-        logger.info('STEP 5 - Check if it\'s Time to Switch to Write Mode')
-        if self.read_only and time.time() > self.read_only_expiry_time:
-            logger.info('\tSwitching to write mode...')
-            self.read_only = False
+        if self.read_only:
+            logger.info('STEP 5 - Check if it\'s Time to Switch to Write Mode')
+            seconds_remaining = int(self.read_only_expiry_time - time.time())
+            if seconds_remaining <= 0:
+                logger.info('\tSwitching to write mode...')
+                self.read_only = False
+            else:
+                logger.info('\tWill switch to write mode in {} seconds'.format(seconds_remaining))
 
     # Takes a praw comment object and a response string and attempts to reply to the comment.
     # If the reply fails, responds accordingly by either switching to read_only mode or adding
