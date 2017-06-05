@@ -29,6 +29,22 @@ def unescape_html(s):
     return s
 
 
+def get_like_stats(statistics):
+        likes_percent = 0
+        dislikes_count = 0
+        likes_count = 0
+
+        if 'likeCount' in statistics:
+            likes_count = int(statistics['likeCount'])
+        if 'dislikeCount' in statistics:
+            dislikes_count = int(statistics['dislikeCount'])
+
+        total_votes = likes_count + dislikes_count
+
+        if total_votes > 0:
+            likes_percent = int(100 * likes_count / total_votes)
+        return dict(likes_count=likes_count, likes_percent=likes_percent)
+
 def get_video_id_from_url(url):
     parsed_url = urlparse(url)
     video_id = None
@@ -68,7 +84,13 @@ def get_concise_description(description):
 
 
 def format_cols_for_video(video):
-    response = '[{}]({})|{}|{}|{}|{:,}+ ({}%)|{:,}'.format(
+    format_str = '[{}]({})|{}|{}|{}|{:,}+ ({}%)|'
+    # Views might be a number or it could be 'Unknown'
+    if isinstance(video['views'], int):
+        format_str += '{:,}'
+    else:
+        format_str += '{}'
+    response = format_str.format(
         video['title'],
         video['url'],
         video['channel'],
@@ -150,18 +172,7 @@ class YoutubeCommentResponder(object):
                 content_details = item['contentDetails']
 
                 description = get_concise_description(snippet['description'])
-
-                likes_percent = 0
-                likes_count = 0
-
-                if 'likeCount' in statistics and 'dislikeCount' in statistics:
-                    likes_count = int(statistics['likeCount'])
-                    dislikes_count = int(statistics['dislikeCount'])
-                    total_votes = likes_count + dislikes_count
-
-                    if total_votes > 0:
-                        likes_percent = int(100 * int(likes_count / total_votes))
-
+                like_stats = get_like_stats(statistics)
                 published = isodate.parse_date(snippet['publishedAt'])
                 duration = isodate.parse_duration(content_details['duration'])
 
@@ -178,9 +189,9 @@ class YoutubeCommentResponder(object):
                     'description': description,
                     'published': str(published),
                     'duration': str(duration),
-                    'likes': likes_count,
-                    'likes_percent': likes_percent,
-                    'views': int(statistics['viewCount'])
+                    'likes': like_stats['likes_count'],
+                    'likes_percent': like_stats['likes_percent'],
+                    'views': statistics.get('viewCount', 'Unknown')
                 })
 
         return video_info
