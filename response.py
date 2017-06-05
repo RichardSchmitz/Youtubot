@@ -86,10 +86,14 @@ def get_concise_description(description):
 def format_cols_for_video(video):
     format_str = '[{}]({})|{}|{}|{}|{:,}+ ({}%)|'
     # Views might be a number or it could be 'Unknown'
-    if isinstance(video['views'], int):
+    views = video['views']
+    try:
+        views = int(views)
         format_str += '{:,}'
-    else:
+    except ValueError:
+        # Not a number
         format_str += '{}'
+
     response = format_str.format(
         video['title'],
         video['url'],
@@ -98,7 +102,7 @@ def format_cols_for_video(video):
         video['duration'],
         video['likes'],
         video['likes_percent'],
-        video['views']
+        views
     )
     return response
 
@@ -110,11 +114,7 @@ def generate_comment_response(comment_text, comment_author, videos):
         ':----------:|:----------:|:----------:|:----------:|:----------:|:----------:'
     ]
     for video in videos:
-        try:
-            title_in_comment = re.search(video['title'].lower(), comment_text.lower())
-        except Exception as e:
-            logger.error('RE error: %s' % e)
-            title_in_comment = False
+        title_in_comment = video['title'].lower() in comment_text.lower()
         if title_in_comment:
             logger.info("Title found in comment. Won't include info for this video.")
         else:
