@@ -3,6 +3,7 @@ from apiclient.discovery import build
 from urllib.parse import urlparse, parse_qs
 import logging
 import isodate
+import youtubot
 
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,6 @@ YOUTUBE_RE = re.compile(r'youtu(?:be\.com|\.be)/(?!user|results|channel|playlist
 USERNAME = '_youtubot_'
 SUBREDDIT = 'youtubot' # Subreddit that you created for the bot
 WIKI_INFO_PATH = 'wiki/index' # Path within the subreddit to link to for "Bot Info"
-version = '1.1.0b'
 
 
 def unescape_html(s):
@@ -133,7 +133,7 @@ def generate_comment_response(comment_text, comment_author, videos):
         if len(responded_videos) > 1:
             video_s = '%ss' % video_s
         start_blurb = '{} linked by /u/{}:\n'.format(video_s, comment_author)
-        end_blurb = '---\n\n[^Info](http://www.reddit.com/r/%s/%s) ^| [^/u/%s ^can ^delete](%s) ^| ^v%s' % (SUBREDDIT, WIKI_INFO_PATH, comment_author, delete_url, version)
+        end_blurb = '---\n\n[^Info](http://www.reddit.com/r/%s/%s) ^| [^/u/%s ^can ^delete](%s) ^| ^v%s' % (SUBREDDIT, WIKI_INFO_PATH, comment_author, delete_url, youtubot.version)
 
         response_rows.insert(0, start_blurb)
         response_rows.append('')
