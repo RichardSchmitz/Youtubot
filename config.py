@@ -3,5 +3,5 @@ DEFAULT_CONFIG = {
     'ghost_mode': False,
     'max_comments_per_iteration': 100,
     'subreddit': 'all',
-    'do_not_reply_to_users': ['youtubefactsbot', 'TrumpTrain-bot']
+    'do_not_reply_to_users': ['youtubefactsbot', 'TrumpTrain-bot', 'video_descriptionbot']
 }

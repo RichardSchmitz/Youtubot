@@ -128,12 +128,12 @@ def generate_comment_response(comment_text, comment_author, videos):
     if len(responded_videos) == 0:
         return None
     else:
-        delete_url = 'http://www.reddit.com/message/compose/?to={}&subject=delete\%20comment&message=$comment_id\%0A\%0AReason\%3A\%20\%2A\%2Aplease+help+us+improve\%2A\%2A'.format(USERNAME)
+        delete_url = 'https://np.reddit.com/message/compose/?to={}&subject=delete\%20comment&message=$comment_id\%0A\%0AReason\%3A\%20\%2A\%2Aplease+help+us+improve\%2A\%2A'.format(USERNAME)
         video_s = 'Video'
         if len(responded_videos) > 1:
             video_s = '%ss' % video_s
         start_blurb = '{} linked by /u/{}:\n'.format(video_s, comment_author)
-        end_blurb = '---\n\n[^Info](http://www.reddit.com/r/%s/%s) ^| [^/u/%s ^can ^delete](%s) ^| ^v%s' % (SUBREDDIT, WIKI_INFO_PATH, comment_author, delete_url, youtubot.version)
+        end_blurb = '---\n\n[^Info](https://np.reddit.com/r/%s/%s) ^| [^/u/%s ^can ^delete](%s) ^| ^v%s' % (SUBREDDIT, WIKI_INFO_PATH, comment_author, delete_url, youtubot.version)
 
         response_rows.insert(0, start_blurb)
         response_rows.append('')
@@ -161,12 +161,26 @@ class YoutubeCommentResponder(object):
         video_info = []
 
         if len(ids) > 0:
-            api_response = self.youtube.videos().list(
-                id=','.join(ids),
-                part='snippet,statistics,contentDetails'
-            ).execute()
+            # The YouTube API only allows us to request data for up to 50 videos
+            # at a time (https://developers.google.com/youtube/v3/docs/videos/list)
+            # so we need to break the id list up into chunks of 50 or less
+            max_ids_per_call = 50
+            id_chunks = [ids[i:i+max_ids_per_call] for i in range(0, len(ids), max_ids_per_call)]
+            items = []
+            for chunk in id_chunks:
+                api_response = self.youtube.videos().list(
+                    id=','.join(chunk),
+                    part='snippet,statistics,contentDetails'
+                ).execute()
+                items += api_response['items']
 
-            for item in api_response['items']:
+            for item in items:
+                if item['id'] not in urls:
+                    logger.warn("video_id={} not found in urls but was returned with API response! Skipping this video.".format(item['id']))
+                    logger.warn("urls={}".format(urls))
+                    logger.warn("ids={}".format(ids))
+                    continue
+
                 snippet = item['snippet']
                 statistics = item['statistics']
                 content_details = item['contentDetails']
