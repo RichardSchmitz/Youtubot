@@ -170,8 +170,8 @@ class YoutuBot(object):
     # the comment's subreddit to the list of banned subreddits
     def submit_response(self, comment, response):
         if self.can_make_changes():
-            sub = comment.submission.subreddit
             try:
+                sub = comment.submission.subreddit
                 reply = comment.reply(response)
                 logger.info('\tCommenting on %s in /r/%s' % (comment.permalink, sub))
                 # Edit the reply to replace the comment_id placeholder
@@ -206,7 +206,9 @@ class YoutuBot(object):
                 # We are banned from this subreddit
                 logger.warning('\tTried to reply but encountered Forbidden.')
                 logger.warning('\t%s' % e)
-                logger.warning('\tAdding /r/%s to the list of banned subreddits' % sub)
-                self.banned_subreddits.add(str(sub))
+                subreddit_name = str(sub)
+                if subreddit_name:
+                    logger.warning('\tAdding /r/%s to the list of banned subreddits' % subreddit_name)
+                    self.banned_subreddits.add(subreddit_name)
         else:
             logger.info('Ghost mode response:\n{}'.format(response))
