@@ -42,7 +42,7 @@ class YoutuBot(object):
 
         self.metrics = scales.collection('/web',
             meter.MeterStat('comments'),
-            scales.Stat('karma.comment', lambda: self.youtubot.comment_karma) # not sure if this will refresh over time or if it's cached...
+            scales.Stat('karma.comment', lambda: self.r.user.me().comment_karma)
         )
 
     def can_comment(self):
