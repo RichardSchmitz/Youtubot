@@ -1,5 +1,5 @@
 import unittest
-from response import get_video_id_from_url, get_like_stats, format_cols_for_video
+from response import get_video_id_from_url, get_like_stats, format_cols_for_video, get_urls_from_text
 
 
 class TestResponse(unittest.TestCase):
@@ -48,3 +48,41 @@ class TestResponse(unittest.TestCase):
             'likes_percent': 95,
             'views': 1470
         }) == '[My Angel Serena &#124; Primary - Inai Sekai [Regret] +HD FC 99.23% 571pp #2](https://youtu.be/Ewc8tPrgzk8)|osu! Content|2017-06-05|0:03:26|41+ (95%)|1,470'
+
+    def test_get_urls_from_text(self):
+        text = """
+               Junior Dad, but I always skip the instrumental part.
+               Also, this guy has some pretty good covers:
+               https://www.youtube.com/watch?v=uJcL8adoBwk
+               """
+        assert get_urls_from_text(text) == ['https://youtube.com/watch?v=uJcL8adoBwk']
+
+        text = """
+               > Scientific Method is great, but "irrationally angry Janeway" may not be a great intro, even if it does culminate in a badass crazy move.
+               https://www.youtube.com/watch?v=bZls8aoA4CQ
+               https://www.youtube.com/watch?v=sSp9geqULuY
+               Mentally I compare these two scenes. The bottom one is from Scientific Method, and the top one is from Lethal Weapon 2. I tend to view Janeway and Martin Riggs as having rather a lot in common, to be honest.
+               """
+        assert get_urls_from_text(text) == ['https://youtube.com/watch?v=bZls8aoA4CQ', 'https://youtube.com/watch?v=sSp9geqULuY']
+
+        text = """
+                    128988612 ^United States Anonymous (ID: x7wpN7EC)
+                Jeremy Corbyn: "Immigration is NOT too high." https://youtu.be/yYCutSGtXOg [Embed]
+               """
+        assert get_urls_from_text(text) == ['https://youtu.be/yYCutSGtXOg']
+
+        text = """
+               Thats a pretty good comparison. He's also a pretty good rapper https://youtu.be/JBpL341V02U.
+               """
+        assert get_urls_from_text(text) == ['https://youtu.be/JBpL341V02U']
+
+        text = """
+               I just listened [here](https://www.youtube.com/watch?v=QtREMnVrDS4&t=15s) that ETNZ will take light option for the foils. But I see gusts about 25 knots!!! Ouch!
+               """
+        assert get_urls_from_text(text) == ['https://youtube.com/watch?v=QtREMnVrDS4&t=15s']
+
+        text = """
+               So during my break I was on Youtube when suddenly [HOLY SHIT NEW KHIII TRAILER](https://www.youtube.com/watch?v=p51wHlWY1uM).
+               Needless to say, I had a productive Naruto break.
+               """
+        assert get_urls_from_text(text) == ['https://youtube.com/watch?v=p51wHlWY1uM']

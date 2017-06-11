@@ -29,6 +29,14 @@ def unescape_html(s):
     return s
 
 
+def get_urls_from_text(text):
+    matches = YOUTUBE_RE.finditer(unescape_html(text))
+    # For each youtube video in the comment text
+    urls = ['https://{}'.format(match.group()).rstrip('.)*') for match in matches]
+
+    return urls
+
+
 def get_like_stats(statistics):
         likes_percent = 0
         dislikes_count = 0
@@ -57,11 +65,6 @@ def get_video_id_from_url(url):
     elif 'youtu.be' in parsed_url.netloc:
         # Shortened URL. Video id is in path.
         video_id = parsed_url.path.strip('/').split('/')[0]
-
-    if video_id:
-        # temporary hack because some of the IDs are ending up with a ), . or * at the end... dont know why
-        # well I know why . ends up in it - it's included in the regex because sometimes the url has feature=youtu.be in it
-        video_id = video_id.strip(')').strip('.').strip('*')
 
     logger.debug('Parsed video_id={} from url={}'.format(video_id, url))
 
@@ -151,8 +154,6 @@ class YoutubeCommentResponder(object):
         urls = {}
         ids = []
         for url in video_urls:
-            # temp hack. Sometimes these end up on the end of the url for some reason...
-            url = url.strip(')').strip('.').strip('*')
             vid = get_video_id_from_url(url)
 
             if vid:
@@ -169,6 +170,7 @@ class YoutubeCommentResponder(object):
             id_chunks = [ids[i:i+max_ids_per_call] for i in range(0, len(ids), max_ids_per_call)]
             items = []
             for chunk in id_chunks:
+                logger.debug('Sending YouTube API request for {} videos'.format(len(chunk)))
                 api_response = self.youtube.videos().list(
                     id=','.join(chunk),
                     part='snippet,statistics,contentDetails'
@@ -212,14 +214,7 @@ class YoutubeCommentResponder(object):
         return video_info
 
     def get_comment_response(self, comment_text, comment_author):
-        matches = YOUTUBE_RE.finditer(unescape_html(comment_text))
-        # For each youtube video in the comment text
-        urls = []
-        for match in matches:
-            url = match.group()
-            # Formulate and post a response
-            url = 'https://%s' % url
-            urls.append(url)
+        urls = get_urls_from_text(comment_text)
         if len(urls) > 0:
             videos = self.get_video_info(urls)
             if len(videos) > 0:
