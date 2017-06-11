@@ -5,3 +5,4 @@ config.ini
 banned_subreddits.txt
 **/*.pyc
 .cache
+logs

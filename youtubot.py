@@ -9,6 +9,7 @@ import re
 from pprint import pprint
 import prawcore, praw
 import collections
+from greplin import scales
 
 
 version = '1.1.2b'
@@ -37,6 +38,11 @@ class YoutuBot(object):
 
         self.youtubot = self.r.user.me()
         self.do_not_reply = [self.youtubot] + self.bot_config['do_not_reply_to_users']
+
+        self.metrics = scales.collection('/web',
+            scales.MeterStat('comments'),
+            scales.Stat('karma.comment', lambda: self.youtubot.comment_karma) # not sure if this will refresh over time or if it's cached...
+        )
 
     def can_comment(self):
         return not self.read_only and self.can_make_changes()
@@ -106,7 +112,6 @@ class YoutuBot(object):
             logger.warning('\t%s' % e)
 
     def _submit_responses(self):
-        # Caution: this hasn't been tested as youtubot now has enough karma to comment constantly
         logger.info('STEP 2 - Submitting Responses (if in Write Mode. Can make changes: %s, Can comment: %s, Task List Len: %d)' % (self.can_make_changes(), self.can_comment(), len(self.task_list)))
         while len(self.task_list) > 0 and (not self.can_make_changes() or self.can_comment()):
             # Pop one out, make sure it's less than 1.5 hours old, and submit the response
@@ -180,6 +185,7 @@ class YoutuBot(object):
                 # Also replace the format quote placeholder
                 new_response = new_response.replace('$quote', '>')
                 reply.edit(new_response)
+                self.metrics.comments.mark()
             except praw.exceptions.APIException as e:
                 # We are commenting too much. Switch to read_only mode
                 m = RATELIM_RE.search(str(e))

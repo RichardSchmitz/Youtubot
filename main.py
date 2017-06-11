@@ -4,6 +4,7 @@ import time
 import configparser
 import youtubot
 import response
+from greplin.scales import graphite
 
 ADMIN_USERNAME = 'theruchet'
 
@@ -26,5 +27,11 @@ bot = youtubot.YoutuBot(reddit=r,
                         responder=y,
                         ghost_mode=False,
                         subreddit='all')
+
+graphite_vars = config['graphite']
+graphitePeriodicPusher = graphite.GraphitePeriodicPusher(graphite_vars['host'], graphite_vars['port'], graphite_vars['prefix'])
+graphitePeriodicPusher.allow("*") # Logs everything to graphite
+graphitePeriodicPusher.start()
+
 bot.run()
 logging.shutdown()
