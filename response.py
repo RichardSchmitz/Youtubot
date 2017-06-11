@@ -94,10 +94,11 @@ def format_cols_for_video(video):
         # Not a number
         format_str += '{}'
 
+    # Pipe (|) characters mess up table formatting, so we need to replace them with html escape sequences
     response = format_str.format(
-        video['title'],
+        video['title'].replace('|', '&#124;'),
         video['url'],
-        video['channel'],
+        video['channel'].replace('|', '&#124;'),
         video['published'],
         video['duration'],
         video['likes'],

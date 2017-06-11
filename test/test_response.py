@@ -1,5 +1,5 @@
 import unittest
-from response import get_video_id_from_url, get_like_stats
+from response import get_video_id_from_url, get_like_stats, format_cols_for_video
 
 
 class TestResponse(unittest.TestCase):
@@ -12,3 +12,39 @@ class TestResponse(unittest.TestCase):
 
     def test_get_likes_stats(self):
         assert get_like_stats({'likeCount': 1345, 'dislikeCount': 34}) == {'likes_count': 1345, 'likes_percent': 97}
+
+    def test_format_cols_for_video_simple(self):
+        assert format_cols_for_video({
+            'title': 'On Mid-Set Coaching',
+            'url': 'https://www.youtube.com/watch?v=yNakW3yhA18',
+            'channel': 'Armada',
+            'published': '2017-06-10',
+            'duration': '0:08:01',
+            'likes': 282,
+            'likes_percent': 98,
+            'views': 4317
+        }) == '[On Mid-Set Coaching](https://www.youtube.com/watch?v=yNakW3yhA18)|Armada|2017-06-10|0:08:01|282+ (98%)|4,317'
+
+    def test_format_cols_for_video_pipes(self):
+        assert format_cols_for_video({
+            'title': 'Inside Stuff: Live From London With Kristen Ledlow | January 7, 2017 | 2016-17 NBA Season',
+            'url': 'https://www.youtube.com/watch?v=wlQ1lTRwz5A',
+            'channel': 'Vancho',
+            'published': '2017-01-25',
+            'duration': '0:02:23',
+            'likes': 1,
+            'likes_percent': 100,
+            'views': 623
+        }) == '[Inside Stuff: Live From London With Kristen Ledlow &#124; January 7, 2017 &#124; 2016-17 NBA Season](https://www.youtube.com/watch?v=wlQ1lTRwz5A)|Vancho|2017-01-25|0:02:23|1+ (100%)|623'
+
+    def test_format_cols_for_video_pipes_and_complex(self):
+        assert format_cols_for_video({
+            'title': 'My Angel Serena | Primary - Inai Sekai [Regret] +HD FC 99.23% 571pp #2',
+            'url': 'https://youtu.be/Ewc8tPrgzk8',
+            'channel': 'osu! Content',
+            'published': '2017-06-05',
+            'duration': '0:03:26',
+            'likes': 41,
+            'likes_percent': 95,
+            'views': 1470
+        }) == '[My Angel Serena &#124; Primary - Inai Sekai [Regret] +HD FC 99.23% 571pp #2](https://youtu.be/Ewc8tPrgzk8)|osu! Content|2017-06-05|0:03:26|41+ (95%)|1,470'
