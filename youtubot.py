@@ -10,6 +10,7 @@ from pprint import pprint
 import prawcore, praw
 import collections
 from greplin import scales
+from greplin.scales import meter
 
 
 version = '1.1.2b'
@@ -32,7 +33,7 @@ class YoutuBot(object):
         self.read_only = False
         self.read_only_expiry_time = time.time()
         self.next_review_of_comments = self.read_only_expiry_time
-        self.task_list = collections.dequeue(maxlen=self.bot_config['max_queue_size'])
+        self.task_list = collections.deque(maxlen=self.bot_config['max_queue_size'])
         # List of comment IDs we have already replied to (so we don't reply twice)
         self.already_done = []
 
@@ -40,7 +41,7 @@ class YoutuBot(object):
         self.do_not_reply = [self.youtubot] + self.bot_config['do_not_reply_to_users']
 
         self.metrics = scales.collection('/web',
-            scales.MeterStat('comments'),
+            meter.MeterStat('comments'),
             scales.Stat('karma.comment', lambda: self.youtubot.comment_karma) # not sure if this will refresh over time or if it's cached...
         )
 

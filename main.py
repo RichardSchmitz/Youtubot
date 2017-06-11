@@ -29,7 +29,7 @@ bot = youtubot.YoutuBot(reddit=r,
                         subreddit='all')
 
 graphite_vars = config['graphite']
-graphitePeriodicPusher = graphite.GraphitePeriodicPusher(graphite_vars['host'], graphite_vars['port'], graphite_vars['prefix'])
+graphitePeriodicPusher = graphite.GraphitePeriodicPusher(graphite_vars['host'], int(graphite_vars['port']), graphite_vars['prefix'])
 graphitePeriodicPusher.allow("*") # Logs everything to graphite
 graphitePeriodicPusher.start()
 
