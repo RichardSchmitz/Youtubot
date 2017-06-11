@@ -10,7 +10,7 @@ from pprint import pprint
 import prawcore, praw
 
 
-version = '1.1.1b'
+version = '1.1.2b'
 
 
 RATELIM_RE = re.compile(r'(\d+) (minutes|seconds)')

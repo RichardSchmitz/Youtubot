@@ -7,7 +7,7 @@ import response
 
 ADMIN_USERNAME = 'theruchet'
 
-logging.basicConfig(format='%(asctime)s [%(name)s] %(levelname)s: %(message)s', filename = 'youtubot_%s.log' % (time.strftime('%Y-%m-%d')), level=logging.INFO)
+logging.basicConfig(format='%(asctime)s [%(name)s] %(levelname)s: %(message)s', filename = 'logs/youtubot_%s.log' % (time.strftime('%Y-%m-%d')), level=logging.INFO)
 # logging.basicConfig(format='%(levelname)s:\t%(message)s', level=logging.DEBUG)
 
 config = configparser.ConfigParser()
