@@ -8,6 +8,7 @@ import requests
 import re
 from pprint import pprint
 import prawcore, praw
+import collections
 
 
 version = '1.1.2b'
@@ -30,7 +31,7 @@ class YoutuBot(object):
         self.read_only = False
         self.read_only_expiry_time = time.time()
         self.next_review_of_comments = self.read_only_expiry_time
-        self.task_list = []
+        self.task_list = collections.dequeue(maxlen=self.bot_config['max_queue_size'])
         # List of comment IDs we have already replied to (so we don't reply twice)
         self.already_done = []
 
@@ -109,7 +110,7 @@ class YoutuBot(object):
         logger.info('STEP 2 - Submitting Responses (if in Write Mode. Can make changes: %s, Can comment: %s, Task List Len: %d)' % (self.can_make_changes(), self.can_comment(), len(self.task_list)))
         while len(self.task_list) > 0 and (not self.can_make_changes() or self.can_comment()):
             # Pop one out, make sure it's less than 1.5 hours old, and submit the response
-            task = self.task_list.pop(0)
+            task = self.task_list.pop()
             comment = task[0]
             response = task[1]
             logger.info('\tPopping comment out of task list (length %d)' % len(self.task_list))
