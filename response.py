@@ -32,7 +32,7 @@ def unescape_html(s):
 def get_urls_from_text(text):
     matches = YOUTUBE_RE.finditer(unescape_html(text))
     # For each youtube video in the comment text
-    urls = ['https://{}'.format(match.group()).rstrip('.)*') for match in matches]
+    urls = ['https://{}'.format(match.group()).rstrip('.,)*') for match in matches]
 
     return urls
 
