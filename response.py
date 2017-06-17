@@ -34,6 +34,16 @@ def get_urls_from_text(text):
     # For each youtube video in the comment text
     urls = ['https://{}'.format(match.group()).rstrip('.,)*') for match in matches]
 
+    # Sometimes still getting weird characters at the end...
+    has_suspicious_characters = False
+    for url in urls:
+        if ',' in url or ')' in url:
+            logger.warn('Parsed url {} contains suspicious characters!', url)
+            has_suspicious_characters = True
+    if has_suspicious_characters:
+        logger.warn('Here is the original (unescaped) text that produced the url(s):')
+        logger.warn(text)
+
     return urls
 
 

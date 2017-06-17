@@ -11,6 +11,7 @@ import prawcore, praw
 import collections
 from greplin import scales
 from greplin.scales import meter
+import googleapiclient
 
 
 version = '1.1.3b'
@@ -75,7 +76,10 @@ class YoutuBot(object):
         # https://stackoverflow.com/questions/18499497/how-to-process-sigterm-signal-gracefully
         try:
             while True:
-                self._main_loop()
+                try:
+                    self._main_loop()
+                except Exception as e:
+                    logger.exception("Encountered unexpected error during main loop!")
         except KeyboardInterrupt:
             self.banned_subreddits.save()
             logger.info('Received KeyboardInterrupt. Exiting.')
@@ -98,19 +102,14 @@ class YoutuBot(object):
             comment_iter = self.comment_stream()
             for i in range(self.max_comments_per_iteration()):
                 comment = next(comment_iter)
-                try:
-                    if self.should_respond(comment):
-                        self.already_done.append(comment.id)
-                        response = self.responder.get_comment_response(comment.body, comment.author)
-                        if response:
-                            logger.info('Queuing response for comment: {}'.format(comment.id))
-                            self.queue_response(comment, response)
-                except requests.exceptions.HTTPError as e:
-                    logger.warning('\tHTTP Error')
-                    logger.warning('\t%s' % e)
-        except requests.exceptions.HTTPError as e:
-            logger.warning('\tHTTP Error when getting all comments')
-            logger.warning('\t%s' % e)
+                if self.should_respond(comment):
+                    self.already_done.append(comment.id)
+                    response = self.responder.get_comment_response(comment.body, comment.author)
+                    if response:
+                        logger.info('Queuing response for comment: {}'.format(comment.id))
+                        self.queue_response(comment, response)
+        except (requests.exceptions.HTTPError, googleapiclient.errors.HttpError, ConnectionResetError) as e:
+            logger.exception("Recoverable exception while attempting to generate responses. Skipping to next step.")
 
     def _submit_responses(self):
         logger.info('STEP 2 - Submitting Responses (if in Write Mode. Can make changes: %s, Can comment: %s, Task List Len: %d)' % (self.can_make_changes(), self.can_comment(), len(self.task_list)))
@@ -200,8 +199,6 @@ class YoutuBot(object):
                     sleep_unit = 'minutes'
                 if sleep_unit == "minutes":
                     sleep_duration = sleep_duration * 60
-                # Go to read-only mode for an extra 30 seconds, just to be safe
-                sleep_duration += 30
                 logger.info('\tComment rate limit exceeded. Switching to read-only mode for %d seconds.' % sleep_duration)
                 self.read_only = True
                 self.read_only_expiry_time = time.time() + sleep_duration
@@ -218,5 +215,9 @@ class YoutuBot(object):
                 if subreddit_name:
                     logger.warning('\tAdding /r/%s to the list of banned subreddits' % subreddit_name)
                     self.banned_subreddits.add(subreddit_name)
+            except prawcore.exceptions.ServerError as e:
+                # Temporary 500 error
+                logger.exception("Recoverable exception while trying to submit a response. Response will be re-queued.")
+                self.queue_response(comment, response)
         else:
             logger.info('Ghost mode response:\n{}'.format(response))

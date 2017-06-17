@@ -91,3 +91,8 @@ class TestResponse(unittest.TestCase):
                It's pretty difficult to find bona-fide metal in Vocaloid, as a lot of the artists that get grouped as metal are more like emo, hardcore, or hard rock. \n\n[SHEBA](http://vocadb.net/Ar/6042) does good [thrash](https://www.youtube.com/watch?v=74otMglSkwE) and has some of the best screams/growls I've heard from Vocaloids/Utau. \n\n[Annyahoo](http://vocadb.net/Ar/4691) also does a lot of [thrash](https://www.youtube.com/watch?v=FEVSKSmE5e0) but messes with other genres a lot. His production quality varies.\n\n[Senjougahara Yousei](http://vocadb.net/Ar/13350) has done some [djent](https://www.youtube.com/watch?v=ztqLjIaU0B4)/prog in the past that's worth checking out, but he's not very active as of late.\n\nThere's also a lot of small artists with just a few songs like [kotoriP](https://www.youtube.com/watch?v=A5pvjDKmbRA), [Punie Koubou](https://www.youtube.com/watch?v=zYR3kKuKWRc), and [lustybaby](https://www.youtube.com/watch?v=ovRLL_ED2xo).
                """
         assert get_urls_from_text(text) == ['https://youtube.com/watch?v=74otMglSkwE', 'https://youtube.com/watch?v=FEVSKSmE5e0', 'https://youtube.com/watch?v=ztqLjIaU0B4', 'https://youtube.com/watch?v=A5pvjDKmbRA', 'https://youtube.com/watch?v=zYR3kKuKWRc', 'https://youtube.com/watch?v=ovRLL_ED2xo']
+
+        text = """
+               https://youtube.com/watch?v=IXnibPgI--Y),
+               """
+        assert get_urls_from_text(text) == ['https://youtube.com/watch?v=IXnibPgI--Y']
