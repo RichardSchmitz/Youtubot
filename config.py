@@ -3,6 +3,6 @@ DEFAULT_CONFIG = {
     'ghost_mode': False,
     'max_comments_per_iteration': 100,
     'subreddit': 'all',
-    'do_not_reply_to_users': ['youtubefactsbot', 'TrumpTrain-bot', 'video_descriptionbot'],
+    'do_not_reply_to_users': ['youtubefactsbot', 'TrumpTrain-bot', 'video_descriptionbot', 'AutoModerator'],
     'max_queue_size': 100
 }

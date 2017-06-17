@@ -13,7 +13,7 @@ from greplin import scales
 from greplin.scales import meter
 
 
-version = '1.1.2b'
+version = '1.1.3b'
 
 
 RATELIM_RE = re.compile(r'(\d+) (minutes|seconds)')
