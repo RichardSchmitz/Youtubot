@@ -12,7 +12,7 @@ logger.setLevel(logging.DEBUG)
 
 MAX_DESCRIPTION_LENGTH = 60
 
-YOUTUBE_RE = re.compile(r'youtu(?:be\.com|\.be)/(?!user|results|channel|playlist|static|#)[a-zA-Z0-9_?=&.-]+')
+YOUTUBE_RE = re.compile(r'youtu(?:be\.com|\.be)/(?!user|results|channel|playlist|static|#)[a-zA-Z0-9_?=&.#-]+')
 USERNAME = '_youtubot_'
 SUBREDDIT = 'youtubot' # Subreddit that you created for the bot
 WIKI_INFO_PATH = 'wiki/index' # Path within the subreddit to link to for "Bot Info"

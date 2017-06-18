@@ -5,9 +5,8 @@ from response import get_video_id_from_url, get_like_stats, format_cols_for_vide
 class TestResponse(unittest.TestCase):
     def test_get_video_id_from_url(self):
         assert get_video_id_from_url('https://youtu.be/x9xOJkhEfmQ') == 'x9xOJkhEfmQ'
-
         assert get_video_id_from_url('https://youtube.com/watch?v=6zuGk80VS6k') == '6zuGk80VS6k'
-
+        assert get_video_id_from_url('https://youtube.com/watch?v=3s5xsVHOJQs#t=0m22s') == '3s5xsVHOJQs'
         assert get_video_id_from_url('https://youtube.com/higatv') == None
 
     def test_get_likes_stats(self):
@@ -101,6 +100,13 @@ class TestResponse(unittest.TestCase):
                WTF....I had to go help the wife for a minute after the 7th. What the? Just...what?
                """
         assert get_urls_from_text(text) == []
+
+        text = """
+               Yeah, it's a cursed item. Probably it attuned to him. :) You have lots of leeway with cursed items,
+               especially because you are DM ((and can change any damn rule that you want)[https://www.youtube.com/watch?v=3s5xsVHOJQs#t=0m22s]).
+                Don't let the sticklers get in the way of your fun.
+               """
+        assert get_urls_from_text(text) == ['https://youtube.com/watch?v=3s5xsVHOJQs#t=0m22s']
 
     def test_find_youtube_urls(self):
         text = """
