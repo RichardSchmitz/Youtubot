@@ -12,12 +12,13 @@ logger.setLevel(logging.DEBUG)
 
 MAX_DESCRIPTION_LENGTH = 60
 
-YOUTUBE_RE = re.compile(r'youtu(?:be\.com|\.be)/(?!user|results|channel|playlist|static|#)[\w?=&-.]+')
+YOUTUBE_RE = re.compile(r'youtu(?:be\.com|\.be)/(?!user|results|channel|playlist|static|#)[a-zA-Z0-9_?=&.-]+')
 USERNAME = '_youtubot_'
 SUBREDDIT = 'youtubot' # Subreddit that you created for the bot
 WIKI_INFO_PATH = 'wiki/index' # Path within the subreddit to link to for "Bot Info"
 
 
+# This may no longer be necessary since we're not scraping the youtube page directly anymore
 def unescape_html(s):
     s = s.replace('&#39;', "'")
     s = s.replace('&#34;', '"')
@@ -29,20 +30,16 @@ def unescape_html(s):
     return s
 
 
-def get_urls_from_text(text):
-    matches = YOUTUBE_RE.finditer(unescape_html(text))
-    # For each youtube video in the comment text
-    urls = ['https://{}'.format(match.group()).rstrip('.,)*') for match in matches]
+def find_youtube_urls(text):
+    return YOUTUBE_RE.findall(unescape_html(text))
 
-    # Sometimes still getting weird characters at the end...
-    has_suspicious_characters = False
-    for url in urls:
-        if ',' in url or ')' in url:
-            logger.warn('Parsed url {} contains suspicious characters!', url)
-            has_suspicious_characters = True
-    if has_suspicious_characters:
-        logger.warn('Here is the original (unescaped) text that produced the url(s):')
-        logger.warn(text)
+
+def get_urls_from_text(text):
+    matches = find_youtube_urls(text)
+    # For each youtube video in the comment text
+    # Need to strip out trailing period because period matches the regex for cases like
+    # &feature=youtu.be, but a trailing period is most likely not part of the URL
+    urls = ['https://{}'.format(match).rstrip('.') for match in matches]
 
     return urls
 

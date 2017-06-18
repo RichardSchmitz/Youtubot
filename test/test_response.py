@@ -1,5 +1,5 @@
 import unittest
-from response import get_video_id_from_url, get_like_stats, format_cols_for_video, get_urls_from_text
+from response import get_video_id_from_url, get_like_stats, format_cols_for_video, get_urls_from_text, find_youtube_urls
 
 
 class TestResponse(unittest.TestCase):
@@ -96,3 +96,39 @@ class TestResponse(unittest.TestCase):
                https://youtube.com/watch?v=IXnibPgI--Y),
                """
         assert get_urls_from_text(text) == ['https://youtube.com/watch?v=IXnibPgI--Y']
+
+        text = """
+               WTF....I had to go help the wife for a minute after the 7th. What the? Just...what?
+               """
+        assert get_urls_from_text(text) == []
+
+    def test_find_youtube_urls(self):
+        text = """
+               No url here
+               """
+        assert find_youtube_urls(text) == []
+
+        text = """
+               blabla https://www.youtube.com/watch?v=uJcL8adoBwk blabla
+               """
+        assert find_youtube_urls(text) == ['youtube.com/watch?v=uJcL8adoBwk']
+
+        text = """
+               [link inside markdown](https://www.youtube.com/watch?v=uJcL8adoBwk)
+               """
+        assert find_youtube_urls(text) == ['youtube.com/watch?v=uJcL8adoBwk']
+
+        text = """
+               don't match unicodehttps://youtube.com/watch?v=YfZDtC9kjVkで爆破解体される高層住宅 も只の公団団地だもんな
+               """
+        assert find_youtube_urls(text) == ['youtube.com/watch?v=YfZDtC9kjVk']
+
+        text = """
+               don't match commashttps://www.youtube.com/watch?v=uJcL8adoBwk,foobar
+               """
+        assert find_youtube_urls(text) == ['youtube.com/watch?v=uJcL8adoBwk']
+
+        text = """
+               don't match bold **https://www.youtube.com/watch?v=uJcL8adoBwk**
+               """
+        assert find_youtube_urls(text) == ['youtube.com/watch?v=uJcL8adoBwk']
