@@ -14,7 +14,7 @@ from greplin.scales import meter
 import googleapiclient
 
 
-version = '1.1.4b'
+version = '2.0.0'
 
 
 RATELIM_RE = re.compile(r'(\d+) (minutes|seconds)')
